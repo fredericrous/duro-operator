@@ -42,7 +42,7 @@ jobs:
 
       - name: Sync chart from source to charts repo
         run: |
-          CHART_NAME="duro-operator"
+          CHART_NAME="${{ github.event.repository.name }}"
           CHART_DIR="charts/charts/${CHART_NAME}"
 
           # Create chart directory if it doesn't exist
@@ -53,7 +53,7 @@ jobs:
 
       - name: Sync CRDs and RBAC from kubebuilder
         run: |
-          CHART_NAME="duro-operator"
+          CHART_NAME="${{ github.event.repository.name }}"
           CHART_DIR="charts/charts/${CHART_NAME}"
 
           # Sync CRDs from kubebuilder output
@@ -86,7 +86,7 @@ jobs:
         id: update-chart
         run: |
           cd charts
-          CHART_NAME="duro-operator"
+          CHART_NAME="${{ github.event.repository.name }}"
           CHART_PATH="charts/${CHART_NAME}/Chart.yaml"
 
           if [ ! -f "$CHART_PATH" ]; then

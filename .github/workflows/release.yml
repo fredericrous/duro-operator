@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/duro-operator
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   release:
@@ -35,7 +35,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -99,8 +99,10 @@ jobs:
             COMMITS=$(git log --pretty=format:"- %s")
           fi
 
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+
           cat > release-notes.md << EOF
-          ## duro-operator $VERSION
+          ## ${REPO_NAME} $VERSION
 
           ### Docker Image
           \`\`\`bash
@@ -111,7 +113,7 @@ jobs:
           \`\`\`bash
           helm repo add fredericrous https://fredericrous.github.io/charts
           helm repo update
-          helm install duro-operator fredericrous/duro-operator
+          helm install ${REPO_NAME} fredericrous/${REPO_NAME}
           \`\`\`
 
           ### What's Changed
