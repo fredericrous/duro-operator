@@ -14,9 +14,9 @@ type DashboardAppSpec struct {
 	// +kubebuilder:validation:Required
 	URL string `json:"url"`
 
-	// Category groups the app in the dashboard
+	// Category groups the app in the dashboard (free-form string, e.g. media, ai, automation, storage)
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=media;ai;productivity;development;admin
+	// +kubebuilder:validation:MinLength=1
 	Category string `json:"category"`
 
 	// Icon is the raw SVG string for the app icon

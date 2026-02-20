@@ -55,13 +55,9 @@ spec:
             description: DashboardAppSpec defines the desired state of DashboardApp
             properties:
               category:
-                description: Category groups the app in the dashboard
-                enum:
-                - media
-                - ai
-                - productivity
-                - development
-                - admin
+                description: Category groups the app in the dashboard (free-form string,
+                  e.g. media, ai, automation, storage)
+                minLength: 1
                 type: string
               groups:
                 description: Groups defines which LDAP/OIDC groups can see this app
