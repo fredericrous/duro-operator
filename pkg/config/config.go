@@ -13,6 +13,9 @@ type OperatorConfig struct {
 	// ProbeAddr is the address for health probes
 	ProbeAddr string
 
+	// ApiAddr is the address for the REST API endpoint (set to "0" to disable)
+	ApiAddr string
+
 	// EnableLeaderElection enables leader election
 	EnableLeaderElection bool
 
@@ -37,6 +40,7 @@ func NewDefaultConfig() *OperatorConfig {
 	return &OperatorConfig{
 		MetricsAddr:             ":8080",
 		ProbeAddr:               ":8081",
+		ApiAddr:                 ":9090",
 		EnableLeaderElection:    false,
 		LeaderElectionID:        "duro-operator",
 		MaxConcurrentReconciles: 3,

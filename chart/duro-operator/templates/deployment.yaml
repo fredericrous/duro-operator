@@ -44,6 +44,11 @@ spec:
             - --metrics-bind-address=0
             {{- end }}
             - --health-probe-bind-address=:{{ .Values.health.port }}
+            {{- if .Values.api.enabled }}
+            - --api-bind-address=:{{ .Values.api.port }}
+            {{- else }}
+            - --api-bind-address=0
+            {{- end }}
           ports:
             {{- if .Values.metrics.enabled }}
             - name: metrics
@@ -53,6 +58,11 @@ spec:
             - name: health
               containerPort: {{ .Values.health.port }}
               protocol: TCP
+            {{- if .Values.api.enabled }}
+            - name: api
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+            {{- end }}
           livenessProbe:
             exec:
               command:

@@ -71,3 +71,8 @@ metrics:
 # Health probes configuration
 health:
   port: 8081
+
+# REST API configuration
+api:
+  enabled: true
+  port: 9090
