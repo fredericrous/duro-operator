@@ -15,8 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	dashboardv1alpha1 "github.com/fredericrous/duro-operator/api/v1alpha1"
 	"github.com/fredericrous/duro-operator/pkg/assembler"
@@ -47,7 +49,12 @@ func (r *DashboardAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&dashboardv1alpha1.DashboardApp{}).
+		For(&dashboardv1alpha1.DashboardApp{},
+			// Ignore status-only changes: Reconcile writes Status.LastSyncedAt=now
+			// on every DashboardApp per reconcile, which would otherwise cascade
+			// into N² re-reconciles through the default watch predicate.
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
 		WithOptions(opts).
 		Complete(r)
 }
@@ -96,12 +103,19 @@ func (r *DashboardAppReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	// Update status for all DashboardApps
+	// Update status for all DashboardApps. Skip the write if nothing changed
+	// — ObservedGeneration acts as the "spec was processed" marker, and we
+	// only refresh LastSyncedAt if we actually had work to do or the app
+	// wasn't Ready before. This keeps the controller quiet at steady state.
 	now := metav1.Now()
 	var statusUpdateErrors []error
 	for i := range appList.Items {
 		app := &appList.Items[i]
+		if app.Status.Ready && app.Status.ObservedGeneration == app.Generation {
+			continue
+		}
 		app.Status.Ready = true
+		app.Status.ObservedGeneration = app.Generation
 		app.Status.LastSyncedAt = &now
 		if err := r.Status().Update(ctx, app); err != nil {
 			log.Error(err, "Failed to update DashboardApp status", "app", app.Name)

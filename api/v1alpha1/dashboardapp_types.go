@@ -42,6 +42,11 @@ type DashboardAppStatus struct {
 	// LastSyncedAt is the timestamp of the last successful sync
 	LastSyncedAt *metav1.Time `json:"lastSyncedAt,omitempty"`
 
+	// ObservedGeneration is the generation of the DashboardApp spec that was
+	// last reconciled. If it matches metadata.generation, the spec has been
+	// fully processed and the controller can skip redundant work.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
 	// Conditions represent the current state of the DashboardApp
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
