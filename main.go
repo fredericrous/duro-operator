@@ -43,7 +43,7 @@ func main() {
 		maxConcurrentReconciles = flag.Int("max-concurrent-reconciles", 3, "Maximum number of concurrent reconciles")
 		reconcileTimeout        = flag.Duration("reconcile-timeout", 5*time.Minute, "Timeout for each reconcile operation")
 
-		apiAddr           = flag.String("api-bind-address", ":9090", "The address the REST API binds to")
+		apiAddr = flag.String("api-bind-address", ":9090", "The address the REST API binds to")
 
 		duroNamespace     = flag.String("duro-namespace", "duro", "Namespace where duro is deployed")
 		duroConfigMapName = flag.String("duro-configmap", "duro-apps", "Name of the duro apps ConfigMap")
