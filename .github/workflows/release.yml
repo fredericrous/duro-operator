@@ -12,7 +12,7 @@ env:
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     permissions:
       contents: write
       packages: write
@@ -188,7 +188,7 @@ jobs:
   security-scan:
     name: Security Scan
     needs: release
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     permissions:
       security-events: write
     steps:

@@ -10,7 +10,7 @@ env:
 jobs:
   validate:
     name: Validate PR
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     permissions:
       contents: read
       pull-requests: write

@@ -14,7 +14,7 @@ permissions:
 jobs:
   dependency-review:
     name: Dependency Review
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
 
   license-check:
     name: License Check
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

@@ -16,7 +16,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: duro-operator
     timeout-minutes: 360
     strategy:
       fail-fast: false
