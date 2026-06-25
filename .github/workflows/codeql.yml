@@ -34,6 +34,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Trust workspace (git safe.directory in container)
+      run: git config --global --add safe.directory '*'
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
