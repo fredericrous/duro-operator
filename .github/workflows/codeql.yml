@@ -23,7 +23,7 @@ jobs:
     # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
     runs-on: duro-operator-ci
     container:
-      image: golang:1.26
+      image: golang:1.25
     timeout-minutes: 360
     strategy:
       fail-fast: false

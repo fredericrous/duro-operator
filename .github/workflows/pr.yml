@@ -6,6 +6,9 @@ on:
 
 env:
   GOLANGCI_LINT_VERSION: v2.4.0
+  # setup-envtest@latest needs go>=1.26; golang:1.25 + GOTOOLCHAIN=auto fetches it
+  # from GOPROXY (the 1.26 container pull-through via zot times out).
+  GOTOOLCHAIN: auto
 
 defaults:
   run:
@@ -17,7 +20,7 @@ jobs:
     # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
     runs-on: duro-operator-ci
     container:
-      image: golang:1.26
+      image: golang:1.25
     permissions:
       contents: read
       pull-requests: write

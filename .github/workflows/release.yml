@@ -8,6 +8,9 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  # setup-envtest@latest needs go>=1.26; golang:1.25 + GOTOOLCHAIN=auto fetches it
+  # from GOPROXY (the 1.26 container pull-through via zot times out).
+  GOTOOLCHAIN: auto
 
 # Force bash (homelab-runner /bin/sh is dash; buildah/stable is fine either way).
 defaults:
@@ -20,7 +23,7 @@ jobs:
     # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
     runs-on: duro-operator-ci
     container:
-      image: golang:1.26
+      image: golang:1.25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
