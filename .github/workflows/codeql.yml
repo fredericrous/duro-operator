@@ -13,10 +13,17 @@ permissions:
   contents: read
   security-events: write
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   analyze:
     name: Analyze
-    runs-on: duro-operator
+    # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
+    runs-on: duro-operator-ci
+    container:
+      image: golang:1.25
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -27,17 +34,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Trust workspace (git safe.directory in container)
+      run: git config --global --add safe.directory '*'
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
         queries: security-extended,security-and-quality
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache: true
 
     - name: Build
       run: |

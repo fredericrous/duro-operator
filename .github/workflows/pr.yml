@@ -7,10 +7,17 @@ on:
 env:
   GOLANGCI_LINT_VERSION: v2.4.0
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   validate:
     name: Validate PR
-    runs-on: duro-operator
+    # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
+    runs-on: duro-operator-ci
+    container:
+      image: golang:1.25
     permissions:
       contents: read
       pull-requests: write
@@ -20,11 +27,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
+      - name: Trust workspace (git safe.directory in container)
+        run: git config --global --add safe.directory '*'
 
       - name: Cache Go modules
         uses: actions/cache@v4

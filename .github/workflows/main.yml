@@ -9,19 +9,25 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# Force bash (homelab-runner /bin/sh is dash; buildah/stable is fine either way).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test:
     name: Test
-    runs-on: duro-operator
+    # golang:1.25 bundles go + make + gcc, which the minimal homelab-runner
+    # lacks (it had `make: command not found`). Runs on the novolume scale set.
+    runs-on: duro-operator-ci
+    container:
+      image: golang:1.25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
+      - name: Trust workspace (git safe.directory in container)
+        run: git config --global --add safe.directory '*'
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -63,49 +69,32 @@ jobs:
 
   build-and-push:
     name: Build and Push
-    runs-on: duro-operator
+    runs-on: duro-operator-ci
     needs: test
     timeout-minutes: 15
     permissions:
       contents: read
       packages: write
+    container:
+      image: quay.io/buildah/stable
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx (in-cluster buildkitd)
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: remote
-          endpoint: tcp://buildkitd.buildkit.svc.cluster.local:1234
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Buildah build + push (main, main-<sha>, latest)
+        env:
+          REG_USER: ${{ github.actor }}
+          REG_PASS: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          buildah bud --storage-driver=vfs \
+            -t "$IMG:main" -t "$IMG:main-$SHA" -t "$IMG:latest" .
+          buildah login -u "$REG_USER" -p "$REG_PASS" ghcr.io
+          for t in main "main-$SHA" latest; do
+            buildah push --storage-driver=vfs "$IMG:$t"
+          done
 
   security-scan:
     runs-on: duro-operator
