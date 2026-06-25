@@ -17,16 +17,14 @@ defaults:
 jobs:
   test:
     name: Test
-    runs-on: duro-operator
+    # golang:1.25 bundles go + make + gcc, which the minimal homelab-runner
+    # lacks (it had `make: command not found`). Runs on the novolume scale set.
+    runs-on: duro-operator-ci
+    container:
+      image: golang:1.25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: false
 
       - name: Cache Go modules
         uses: actions/cache@v4
