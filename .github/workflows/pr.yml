@@ -6,6 +6,9 @@ on:
 
 env:
   GOLANGCI_LINT_VERSION: v2.4.0
+  # Pinned: gosec now fails the build, so an unpinned @latest would let any
+  # upstream release turn CI red without a change on our side.
+  GOSEC_VERSION: v2.28.0
   # setup-envtest@latest needs go>=1.26; golang:1.25 + GOTOOLCHAIN=auto fetches it
   # from GOPROXY (the 1.26 container pull-through via zot times out).
   GOTOOLCHAIN: auto
@@ -91,7 +94,7 @@ jobs:
       - name: Run gosec security scanner
         id: gosec
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@${{ env.GOSEC_VERSION }}
           # Always produce the SARIF (uploaded below regardless of outcome), but
           # record findings so the final gate can fail the PR on them.
           if gosec -fmt sarif -out gosec-results.sarif ./...; then
