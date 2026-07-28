@@ -155,7 +155,7 @@ jobs:
           | Code Formatting | ${{ steps.fmt.outputs.formatting_needed == 'false' && 'Passed' || 'Failed' }} |
           | Go Vet | ${{ steps.vet.outputs.vet_failed == 'false' && 'Passed' || 'Failed' }} |
           | GolangCI-Lint | ${{ steps.lint.outputs.lint_failed != 'true' && 'Passed' || 'Failed' }} |
-          | Security Scan | Completed (check Security tab) |
+          | Security Scan (gosec) | ${{ steps.gosec.outputs.gosec_failed != 'true' && 'Passed' || 'Failed' }} |
           | Unit Tests | ${{ steps.unit_tests.outputs.unit_tests_passed == 'true' && 'Passed' || 'Failed' }} |
           | Code Coverage | ${COVERAGE:-N/A} |
 

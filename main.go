@@ -174,9 +174,16 @@ func main() {
 		}
 
 		if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+			// The shutdown context below is deliberately NOT derived from ctx:
+			// this goroutine runs *because* ctx was cancelled, so passing it
+			// would abort the drain instantly and defeat the graceful shutdown.
+			// #nosec G118 -- ctx is already cancelled by the time Shutdown runs
 			go func() {
 				<-ctx.Done()
-				if err := apiSrv.Shutdown(context.Background()); err != nil {
+				// Bounded so a wedged connection cannot hang termination.
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if err := apiSrv.Shutdown(shutdownCtx); err != nil {
 					setupLog.Error(err, "Failed to gracefully shut down API server")
 				}
 			}()
