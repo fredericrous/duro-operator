@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"net/http"
 	"os"
@@ -164,15 +165,30 @@ func main() {
 		apiMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		apiSrv := &http.Server{Addr: cfg.ApiAddr, Handler: apiMux}
+		apiSrv := &http.Server{
+			Addr:    cfg.ApiAddr,
+			Handler: apiMux,
+			// Bound the header read so a slow/stalled client cannot hold a
+			// connection open indefinitely (Slowloris, gosec G112).
+			ReadHeaderTimeout: 10 * time.Second,
+		}
 
 		if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+			// The shutdown context below is deliberately NOT derived from ctx:
+			// this goroutine runs *because* ctx was cancelled, so passing it
+			// would abort the drain instantly and defeat the graceful shutdown.
+			// #nosec G118 -- ctx is already cancelled by the time Shutdown runs
 			go func() {
 				<-ctx.Done()
-				apiSrv.Shutdown(context.Background())
+				// Bounded so a wedged connection cannot hang termination.
+				shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if err := apiSrv.Shutdown(shutdownCtx); err != nil {
+					setupLog.Error(err, "Failed to gracefully shut down API server")
+				}
 			}()
 			setupLog.Info("Starting API server", "addr", cfg.ApiAddr)
-			if err := apiSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := apiSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
 			return nil
