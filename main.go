@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"net/http"
 	"os"
@@ -164,15 +165,23 @@ func main() {
 		apiMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		apiSrv := &http.Server{Addr: cfg.ApiAddr, Handler: apiMux}
+		apiSrv := &http.Server{
+			Addr:    cfg.ApiAddr,
+			Handler: apiMux,
+			// Bound the header read so a slow/stalled client cannot hold a
+			// connection open indefinitely (Slowloris, gosec G112).
+			ReadHeaderTimeout: 10 * time.Second,
+		}
 
 		if err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 			go func() {
 				<-ctx.Done()
-				apiSrv.Shutdown(context.Background())
+				if err := apiSrv.Shutdown(context.Background()); err != nil {
+					setupLog.Error(err, "Failed to gracefully shut down API server")
+				}
 			}()
 			setupLog.Info("Starting API server", "addr", cfg.ApiAddr)
-			if err := apiSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := apiSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
 			return nil

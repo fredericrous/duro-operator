@@ -92,14 +92,20 @@ jobs:
         id: gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -no-fail -fmt sarif -out gosec-results.sarif ./... || true
+          # Always produce the SARIF (uploaded below regardless of outcome), but
+          # record findings so the final gate can fail the PR on them.
+          if gosec -fmt sarif -out gosec-results.sarif ./...; then
+            echo "gosec_failed=false" >> $GITHUB_OUTPUT
+          else
+            echo "gosec_failed=true" >> $GITHUB_OUTPUT
+          fi
           if [ ! -f gosec-results.sarif ]; then
             echo '{"version":"2.1.0","runs":[]}' > gosec-results.sarif
           fi
 
       - name: Upload gosec results
         uses: github/codeql-action/upload-sarif@v3
-        if: steps.gosec.outcome == 'success'
+        if: always()
         with:
           sarif_file: gosec-results.sarif
 
@@ -200,5 +206,7 @@ jobs:
         if: |
           steps.fmt.outputs.formatting_needed == 'true' ||
           steps.vet.outputs.vet_failed == 'true' ||
+          steps.lint.outputs.lint_failed == 'true' ||
+          steps.gosec.outputs.gosec_failed == 'true' ||
           steps.unit_tests.outputs.unit_tests_passed != 'true'
         run: exit 1
