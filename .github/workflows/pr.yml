@@ -171,6 +171,11 @@ jobs:
 
       - name: Comment PR
         if: always()
+        # Posting the summary is cosmetic, and it does not work on the
+        # self-hosted runner this job uses (the action's container cannot
+        # start there). Left fatal it fails the job AND skips the gate below,
+        # so real lint/test failures would never be evaluated.
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
