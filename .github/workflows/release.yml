@@ -30,6 +30,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Attestation check
+        id: attest
+        uses: fredericrous/attest@v1
+
       - name: Trust workspace (git safe.directory in container)
         run: git config --global --add safe.directory '*'
 
@@ -49,6 +53,7 @@ jobs:
           make envtest
 
       - name: Run tests
+        if: ${{ !contains(fromJSON(steps.attest.outputs.gates), 'pre-push-go-test') }}
         env:
           KUBEBUILDER_ASSETS: "${{ github.workspace }}/bin/k8s/1.29.0-linux-amd64"
         run: |
