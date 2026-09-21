@@ -21,9 +21,11 @@ jobs:
   validate:
     name: Validate PR
     # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
+    # -bookworm = the same Debian image minus the Windows variants, so the zot
+    # pull-through sync stays small; zot polls this tag (see main.yml).
     runs-on: duro-operator-ci
     container:
-      image: golang:1.25
+      image: golang:1.25-bookworm
     permissions:
       contents: read
       pull-requests: write
