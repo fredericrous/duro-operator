@@ -5,13 +5,15 @@ on:
     types: [opened, synchronize, reopened]
 
 env:
-  GOLANGCI_LINT_VERSION: v2.4.0
+  # golangci-lint's version is pinned in the Makefile (GOLANGCI_LINT_VERSION)
+  # and `make lint` below runs that one, so a workstation and CI lint with the
+  # same binary against the same go.mod toolchain.
   # Pinned: gosec now fails the build, so an unpinned @latest would let any
   # upstream release turn CI red without a change on our side.
   GOSEC_VERSION: v2.28.0
-  # setup-envtest@latest needs go>=1.26; go.mod says 1.25, GOTOOLCHAIN=auto
-  # lets Go fetch the newer toolchain from GOPROXY for that one tool.
-  GOTOOLCHAIN: auto
+  # No GOTOOLCHAIN override: setup-envtest is pinned in the Makefile to a
+  # release-0.22 build that go.mod's toolchain can compile, so nothing here
+  # needs go to fetch a newer one behind setup-go's back any more.
 
 defaults:
   run:
@@ -64,15 +66,10 @@ jobs:
         run: |
           go build ./...
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${{ env.GOLANGCI_LINT_VERSION }}
-
       - name: Run golangci-lint
         id: lint
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          golangci-lint run --timeout 5m || echo "lint_failed=true" >> $GITHUB_OUTPUT
+          make lint || echo "lint_failed=true" >> $GITHUB_OUTPUT
 
       - name: Check code formatting
         id: fmt
