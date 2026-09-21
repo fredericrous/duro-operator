@@ -8,11 +8,10 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  # setup-envtest@latest needs go>=1.26; golang:1.25 + GOTOOLCHAIN=auto fetches it
-  # from GOPROXY (the 1.26 container pull-through via zot times out).
+  # setup-envtest@latest needs go>=1.26; go.mod says 1.25, GOTOOLCHAIN=auto
+  # lets Go fetch the newer toolchain from GOPROXY for that one tool.
   GOTOOLCHAIN: auto
 
-# Force bash (homelab-runner /bin/sh is dash; buildah/stable is fine either way).
 defaults:
   run:
     shell: bash
@@ -20,12 +19,8 @@ defaults:
 jobs:
   test:
     name: Test
-    # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
-    # -bookworm = the same Debian image minus the Windows variants, so the zot
-    # pull-through sync stays small; zot polls this tag (see main.yml).
-    runs-on: duro-operator-ci
-    container:
-      image: golang:1.25-bookworm
+    # Hosted runners since 2026-09-21 (see pr.yml for why).
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,8 +31,12 @@ jobs:
         id: attest
         uses: fredericrous/attest@v1
 
-      - name: Trust workspace (git safe.directory in container)
-        run: git config --global --add safe.directory '*'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          # the explicit module/build cache steps below stay in charge
+          cache: false
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -66,12 +65,11 @@ jobs:
   build:
     name: Build & push image
     needs: test
-    runs-on: duro-operator-ci
+    # ubuntu-24.04 ships buildah; no job container, no vfs storage driver.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    container:
-      image: quay.io/buildah/stable
     outputs:
       version_img: ${{ steps.ver.outputs.version_img }}
     steps:
@@ -94,17 +92,17 @@ jobs:
           set -euo pipefail
           IMG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           MM=$(echo "$V" | awk -F. '{print $1"."$2}')
-          buildah bud --storage-driver=vfs \
+          buildah bud \
             -t "$IMG:$V" -t "$IMG:$MM" -t "$IMG:latest" .
           buildah login -u "$REG_USER" -p "$REG_PASS" ghcr.io
           for t in "$V" "$MM" latest; do
-            buildah push --storage-driver=vfs "$IMG:$t"
+            buildah push "$IMG:$t"
           done
 
   release:
     name: Release
     needs: build
-    runs-on: duro-operator
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
@@ -214,7 +212,7 @@ jobs:
   security-scan:
     name: Security Scan
     needs: release
-    runs-on: duro-operator
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
     steps:
