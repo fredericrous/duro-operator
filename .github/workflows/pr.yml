@@ -9,8 +9,8 @@ env:
   # Pinned: gosec now fails the build, so an unpinned @latest would let any
   # upstream release turn CI red without a change on our side.
   GOSEC_VERSION: v2.28.0
-  # setup-envtest@latest needs go>=1.26; golang:1.25 + GOTOOLCHAIN=auto fetches it
-  # from GOPROXY (the 1.26 container pull-through via zot times out).
+  # setup-envtest@latest needs go>=1.26; go.mod says 1.25, GOTOOLCHAIN=auto
+  # lets Go fetch the newer toolchain from GOPROXY for that one tool.
   GOTOOLCHAIN: auto
 
 defaults:
@@ -20,12 +20,11 @@ defaults:
 jobs:
   validate:
     name: Validate PR
-    # golang:1.25 bundles go + make + gcc (the minimal homelab-runner lacks make).
-    # -bookworm = the same Debian image minus the Windows variants, so the zot
-    # pull-through sync stays small; zot polls this tag (see main.yml).
-    runs-on: duro-operator-ci
-    container:
-      image: golang:1.25-bookworm
+    # Hosted runner (2026-09-21): the ARC job container could not be pulled
+    # through the NAS mirror on every upstream rebuild (6.5 GB golang index),
+    # and ARC queue waits ran past the job itself. The public repo pays
+    # nothing for ubuntu-latest, which ships make + gcc; Go comes from setup-go.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
@@ -39,8 +38,12 @@ jobs:
         id: attest
         uses: fredericrous/attest@v1
 
-      - name: Trust workspace (git safe.directory in container)
-        run: git config --global --add safe.directory '*'
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          # the explicit module/build cache steps below stay in charge
+          cache: false
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -179,10 +182,9 @@ jobs:
 
       - name: Comment PR
         if: always()
-        # Posting the summary is cosmetic, and it does not work on the
-        # self-hosted runner this job uses (the action's container cannot
-        # start there). Left fatal it fails the job AND skips the gate below,
-        # so real lint/test failures would never be evaluated.
+        # Posting the summary is cosmetic. Left fatal it would fail the job
+        # AND skip the gate below, so real lint/test failures would never be
+        # evaluated.
         continue-on-error: true
         uses: actions/github-script@v7
         with:
