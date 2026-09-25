@@ -116,3 +116,70 @@ func TestNewAppsHandler_ListError(t *testing.T) {
 		t.Errorf("status = %d, want 500", rr.Code)
 	}
 }
+
+func dashboardApp(name, display string) *dashboardv1alpha1.DashboardApp {
+	return &dashboardv1alpha1.DashboardApp{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: name},
+		Spec: dashboardv1alpha1.DashboardAppSpec{
+			Name: display, URL: "https://" + name + ".example", Category: "admin",
+			Icon: "<svg/>", Groups: []string{"lldap_admin"}, Priority: 10,
+		},
+	}
+}
+
+func get(t *testing.T, h http.Handler, ifNoneMatch string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps", nil)
+	if ifNoneMatch != "" {
+		req.Header.Set("If-None-Match", ifNoneMatch)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestNewAppsHandler_ETagIsStableAndOrderIndependent(t *testing.T) {
+	s := newScheme(t)
+	a := fakeclient.NewClientBuilder().WithScheme(s).
+		WithObjects(dashboardApp("plex", "Plex"), dashboardApp("grafana", "Grafana")).Build()
+	b := fakeclient.NewClientBuilder().WithScheme(s).
+		WithObjects(dashboardApp("grafana", "Grafana"), dashboardApp("plex", "Plex")).Build()
+
+	ea := get(t, NewAppsHandler(a, logr.Discard()), "").Header().Get("ETag")
+	eb := get(t, NewAppsHandler(b, logr.Discard()), "").Header().Get("ETag")
+	if ea == "" || ea != eb {
+		t.Fatalf("ETag must be set and independent of list order: %q vs %q", ea, eb)
+	}
+	if again := get(t, NewAppsHandler(a, logr.Discard()), "").Header().Get("ETag"); again != ea {
+		t.Fatalf("ETag changed between identical calls: %q then %q", ea, again)
+	}
+}
+
+func TestNewAppsHandler_NotModifiedWhenETagMatches(t *testing.T) {
+	c := fakeclient.NewClientBuilder().WithScheme(newScheme(t)).WithObjects(dashboardApp("plex", "Plex")).Build()
+	h := NewAppsHandler(c, logr.Discard())
+	etag := get(t, h, "").Header().Get("ETag")
+
+	for _, header := range []string{etag, "W/" + etag, `"other", ` + etag, "*"} {
+		rec := get(t, h, header)
+		if rec.Code != http.StatusNotModified || rec.Body.Len() != 0 {
+			t.Fatalf("If-None-Match %q: want 304 with empty body, got %d (%d bytes)", header, rec.Code, rec.Body.Len())
+		}
+	}
+	if rec := get(t, h, `"stale"`); rec.Code != http.StatusOK {
+		t.Fatalf("stale ETag: want 200, got %d", rec.Code)
+	}
+}
+
+func TestNewAppsHandler_ETagChangesWithTheApps(t *testing.T) {
+	s := newScheme(t)
+	before := get(t, NewAppsHandler(fakeclient.NewClientBuilder().WithScheme(s).
+		WithObjects(dashboardApp("plex", "Plex")).Build(), logr.Discard()), "").Header().Get("ETag")
+	added := get(t, NewAppsHandler(fakeclient.NewClientBuilder().WithScheme(s).
+		WithObjects(dashboardApp("plex", "Plex"), dashboardApp("customer-vision", "Customer Vision")).Build(), logr.Discard()), "").Header().Get("ETag")
+	renamed := get(t, NewAppsHandler(fakeclient.NewClientBuilder().WithScheme(s).
+		WithObjects(dashboardApp("plex", "Plex Media")).Build(), logr.Discard()), "").Header().Get("ETag")
+	if before == added || before == renamed {
+		t.Fatalf("ETag must change when an app is added or edited: %q %q %q", before, added, renamed)
+	}
+}
