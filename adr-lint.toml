@@ -1,0 +1,37 @@
+# adr-lint's configuration for duro-operator.
+#
+# [architecture] is this repository's architecture contract (ADR-0056):
+# `adr-lint check` blocks a commit that breaks it, and CI runs it again
+# (.github/workflows/adr.yaml). `adr-lint layers explain [PATH]` shows where
+# a package sits. To fix a finding, move the code inward, or change this
+# contract and say why in the pull request; never a waiver.
+
+# Layers, inner first: a package may import its own layer and the ones above.
+[[architecture.layers]]
+name = "domain"
+paths = ["api/**", "pkg/errors", "pkg/config"]
+
+[[architecture.layers]]
+name = "assembly"
+paths = ["pkg/assembler"]
+
+[[architecture.layers]]
+name = "adapters"
+paths = ["pkg/apiserver", "controllers"]
+
+[[architecture.layers]]
+name = "main"
+paths = ["."]
+
+# The cluster and the network are reached only from the adapters and main.
+[[architecture.only_in]]
+imports = ["net/http"]
+paths = ["pkg/apiserver", "."]
+
+[[architecture.only_in]]
+imports = ["sigs.k8s.io/controller-runtime/pkg/client", "k8s.io/client-go"]
+paths = ["controllers", "pkg/apiserver", "."]
+
+# Clock, environment and process reads belong to main.
+[architecture.ambient]
+paths = ["."]
