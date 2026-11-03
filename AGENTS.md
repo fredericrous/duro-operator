@@ -59,3 +59,9 @@ message it asks for, or change what it asks for — `amont setup`, or
 `amont.commit.*` directly.
 
 <!-- amont:end -->
+
+## Architecture contract
+
+`adr-lint.toml` declares the layers (`adr-lint layers explain [PATH]`). When
+`adr-lint-check` blocks an import, move the code inward, or change the
+contract and say why in the pull request. Never waive the finding.

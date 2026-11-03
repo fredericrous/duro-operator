@@ -75,3 +75,37 @@ jobs:
       # into every session and nothing else would say so.
       - name: The session hook is wired and current
         run: aval hook install --check
+
+      # The architecture contract in adr-lint.toml (ADR-0056). The local gate
+      # blocks a commit that breaks it; this runs it again on every tracked Go
+      # file, so a contributor without adr-lint cannot merge a break. Both
+      # tools are pinned by checksum: adr-lint refuses any ast-grep other
+      # than the version it was built against.
+      - name: Ensure adr-lint and ast-grep
+        env:
+          ADR_LINT: "0.15.0"
+          ADR_LINT_SHA256: 257da35a72c0f3a157f84526b25ba94c71a69381d92be7e2caa7dd3e2b0e8b36
+          AST_GREP: "0.51.0"
+          AST_GREP_SHA256: a7eead5552d3a8daad70f5d50d935da44bd0c138e946b5b0a96b1d38169fa639
+        run: |
+          set -euo pipefail
+          name="adr-lint-$ADR_LINT-x86_64-unknown-linux-gnu"
+          curl -fsSL --retry 3 --retry-delay 5 --max-time 60 -o "$RUNNER_TEMP/$name.tar.gz" \
+            "https://github.com/fredericrous/adr-lint/releases/download/v$ADR_LINT/$name.tar.gz"
+          echo "$ADR_LINT_SHA256  $RUNNER_TEMP/$name.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$name.tar.gz" -C "$RUNNER_TEMP"
+          curl -fsSL --retry 3 --retry-delay 5 --max-time 120 -o "$RUNNER_TEMP/ast-grep.zip" \
+            "https://github.com/ast-grep/ast-grep/releases/download/$AST_GREP/app-x86_64-unknown-linux-gnu.zip"
+          echo "$AST_GREP_SHA256  $RUNNER_TEMP/ast-grep.zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/tools"
+          unzip -q -o "$RUNNER_TEMP/ast-grep.zip" ast-grep -d "$RUNNER_TEMP/tools"
+          install -m 0755 "$RUNNER_TEMP/$name/adr-lint" "$RUNNER_TEMP/tools/adr-lint"
+          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/tools/adr-lint" --version
+          "$RUNNER_TEMP/tools/ast-grep" --version
+
+      - name: The architecture contract holds
+        run: |
+          set -euo pipefail
+          adr-lint layers summary
+          git ls-files -z '*.go' | xargs -0 adr-lint check --
