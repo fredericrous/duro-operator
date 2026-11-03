@@ -1,0 +1,16 @@
+amont-provenance-v1
+commit 715ffb8c4199e6e2cbd6a555d7d387af21b20fd5
+tree c2968ca964d69115b3e89247510a67ecab3134c6
+canon 97c0c4f587e83213e229069dc650428f052028d9
+patch dbe9ce2375e4af2816b3b3d50230d7a7d0d69eaf
+plan docs/plans/2026-11-03-repositories-pilot-architecture-contracts.md 6dd09faceedbe4cd5abf18aa759fecc2dd1a76e5f814521378b9bb5a224f1890
+review reviewed 7d38c8e75e0d5338ea1377efe1327b60a3948a89a84e6fa32cde5f386117f474
+preview not-required
+producer amont-agent 3.15.1
+
+-----BEGIN SSH SIGNATURE-----
+U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg7UOvJ8myo4dhW907VFty7T/bUV
+RFQerK+MWJ4bjChwcAAAAQYW1vbnQtcHJvdmVuYW5jZQAAAAAAAAAGc2hhNTEyAAAAUwAA
+AAtzc2gtZWQyNTUxOQAAAEB1xtM3utAVDw+rUcHU5LGHlxuMJu13QM32UrOSiLvjCq4kV9
+TKaZGWit1VsLNcNNT3GmFpjhFbIaAFwvo4zTsE
+-----END SSH SIGNATURE-----
