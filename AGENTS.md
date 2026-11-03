@@ -64,4 +64,6 @@ message it asks for, or change what it asks for — `amont setup`, or
 
 `adr-lint.toml` declares the layers (`adr-lint layers explain [PATH]`). When
 `adr-lint-check` blocks an import, move the code inward, or change the
-contract and say why in the pull request. Never waive the finding.
+contract and record why in the plan's Decision log. Never waive the finding.
+A new package directory joins a layer in the same commit: a package in no
+layer is not checked.

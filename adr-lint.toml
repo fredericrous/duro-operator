@@ -4,7 +4,9 @@
 # `adr-lint check` blocks a commit that breaks it, and CI runs it again
 # (.github/workflows/adr.yaml). `adr-lint layers explain [PATH]` shows where
 # a package sits. To fix a finding, move the code inward, or change this
-# contract and say why in the pull request; never a waiver.
+# contract and record why in the plan's Decision log; never a waiver. A new
+# package directory joins a layer in the same commit: an unplaced package is
+# not checked.
 
 # Layers, inner first: a package may import its own layer and the ones above.
 [[architecture.layers]]
