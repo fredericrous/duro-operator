@@ -1,7 +1,8 @@
 # Build stage
-FROM golang:1.25.13-alpine AS builder
+FROM golang:1.26.11-alpine AS builder
 
 # Install build dependencies
+# hadolint ignore=DL3018
 RUN apk add --no-cache git ca-certificates
 
 WORKDIR /workspace
@@ -26,6 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Runtime stage
 FROM alpine:3.21
 
+# hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates wget
 
 COPY --from=builder /workspace/manager /manager
