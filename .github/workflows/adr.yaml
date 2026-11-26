@@ -99,8 +99,8 @@ jobs:
       - name: Ensure greenspotter and ast-grep
         env:
           GH_TOKEN: ${{ github.token }}
-          GREENSPOTTER: "0.15.0"
-          GREENSPOTTER_SHA256: 257da35a72c0f3a157f84526b25ba94c71a69381d92be7e2caa7dd3e2b0e8b36
+          GREENSPOTTER: "0.20.1"
+          GREENSPOTTER_SHA256: f14ec614e7304ef716b27ef8301f60d9295739e0a149399474c4f29b30a64c6b
           AST_GREP: "0.51.0"
           AST_GREP_SHA256: a7eead5552d3a8daad70f5d50d935da44bd0c138e946b5b0a96b1d38169fa639
         run: |
