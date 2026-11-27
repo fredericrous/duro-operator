@@ -1,7 +1,7 @@
 ---
 canonical: decisions:docs/plans/2026-11-27-topo3-github-repos.md
 phases: [5]
-status: active
+status: done
 branch: chore/t25-topo3
 repos: [duro-operator]
 ---
@@ -14,3 +14,6 @@ script.
 
 ## Code review
 - duro-operator: none — CI pin, re-vendored pack, regenerated hook and gate block, one comment, no code
+
+## Implementation review
+- implementation-review (opus): approve (51k, 28 s): low, record checks as input, expected, actual.
